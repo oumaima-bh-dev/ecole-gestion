@@ -97,6 +97,9 @@ class AuthController extends Controller {
             case 'parent':
                 $this->redirect('parent', 'dashboard');
                 break;
+            case 'student':
+                $this->redirect('student', 'documents');
+                break;
             default:
                 $this->redirect('auth', 'login');
         }

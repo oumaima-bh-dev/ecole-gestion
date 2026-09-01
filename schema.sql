@@ -114,3 +114,36 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `recu_no` VARCHAR(50) NOT NULL UNIQUE,
   FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Document categories created by teachers
+CREATE TABLE IF NOT EXISTS `document_categories` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `teacher_id` INT NOT NULL,
+  `nom` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uniq_teacher_category` (`teacher_id`, `nom`),
+  FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Pedagogical documents published for assigned classes
+CREATE TABLE IF NOT EXISTS `pedagogical_documents` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `teacher_id` INT NOT NULL,
+  `category_id` INT NOT NULL,
+  `class_id` INT NOT NULL,
+  `titre` VARCHAR(150) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `file_name` VARCHAR(255) NOT NULL,
+  `original_name` VARCHAR(255) NOT NULL,
+  `file_path` VARCHAR(255) NOT NULL,
+  `mime_type` VARCHAR(120) DEFAULT NULL,
+  `file_size` INT DEFAULT 0,
+  `status` ENUM('active', 'inactive') DEFAULT 'active',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (`teacher_id`) REFERENCES `teachers` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`category_id`) REFERENCES `document_categories` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  INDEX `idx_documents_class_status` (`class_id`, `status`),
+  INDEX `idx_documents_teacher` (`teacher_id`)
+) ENGINE=InnoDB;

@@ -28,13 +28,17 @@ $navItems = [
         ['action' => 'classes', 'icon' => 'fa-chalkboard-user', 'label' => 'Mes classes'],
         ['action' => 'grades', 'icon' => 'fa-pen-to-square', 'label' => 'Saisie des notes'],
         ['action' => 'attendance', 'icon' => 'fa-calendar-check', 'label' => 'Présences'],
+        ['action' => 'documents', 'icon' => 'fa-folder-open', 'label' => 'Mes documents'],
     ],
     'parent' => [
         ['action' => 'dashboard', 'icon' => 'fa-users', 'label' => 'Suivi des enfants'],
     ],
+    'student' => [
+        ['action' => 'documents', 'icon' => 'fa-folder-open', 'label' => 'Mes documents'],
+    ],
 ];
 
-$controllerForRole = $role === 'teacher' ? 'teacher' : ($role === 'parent' ? 'parent' : 'admin');
+$controllerForRole = $role === 'teacher' ? 'teacher' : ($role === 'parent' ? 'parent' : ($role === 'student' ? 'student' : 'admin'));
 $displayRole = $roleLabels[$role] ?? ucfirst($role);
 $initials = strtoupper(substr($username, 0, 2));
 ?>
