@@ -112,6 +112,20 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `montant` DECIMAL(10,2) NOT NULL,
   `date_paiement` DATE NOT NULL,
   `recu_no` VARCHAR(50) NOT NULL UNIQUE,
+  `mode_paiement` VARCHAR(50) NOT NULL DEFAULT 'Espèces',
+  `reference_paiement` VARCHAR(100) DEFAULT NULL,
+  `notes` VARCHAR(255) DEFAULT NULL,
+  FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Student financial situation
+CREATE TABLE IF NOT EXISTS `student_fees` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT NOT NULL UNIQUE,
+  `total_due` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `notes` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

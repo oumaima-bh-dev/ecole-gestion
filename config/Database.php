@@ -39,6 +39,7 @@ class Database {
                 // Auto-initialize tables if empty
                 self::initializeDatabase();
                 self::ensureDocumentTables();
+                self::ensureFinancialTables();
 
             } catch (PDOException $exception) {
                 die("Connection error: " . $exception->getMessage());
@@ -100,6 +101,48 @@ class Database {
               INDEX `idx_documents_teacher` (`teacher_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+    }
+
+    private static function ensureFinancialTables() {
+        self::$conn->exec("
+            CREATE TABLE IF NOT EXISTS `student_fees` (
+              `id` INT AUTO_INCREMENT PRIMARY KEY,
+              `student_id` INT NOT NULL UNIQUE,
+              `total_due` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+              `notes` VARCHAR(255) DEFAULT NULL,
+              `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+
+        self::addColumnIfMissing('payments', 'mode_paiement', "VARCHAR(50) NOT NULL DEFAULT 'Espèces'");
+        self::addColumnIfMissing('payments', 'reference_paiement', "VARCHAR(100) DEFAULT NULL");
+        self::addColumnIfMissing('payments', 'notes', "VARCHAR(255) DEFAULT NULL");
+
+        self::$conn->exec("
+            INSERT INTO student_fees (student_id, total_due)
+            SELECT s.id,
+                   CASE
+                       WHEN n.nom = 'Primaire' THEN 6000.00
+                       WHEN n.nom = 'Collège' THEN 7500.00
+                       WHEN n.nom = 'Lycée' THEN 9000.00
+                       ELSE 0.00
+                   END
+            FROM students s
+            LEFT JOIN classes c ON s.class_id = c.id
+            LEFT JOIN niveaux n ON c.niveau_id = n.id
+            LEFT JOIN student_fees sf ON sf.student_id = s.id
+            WHERE sf.id IS NULL
+        ");
+    }
+
+    private static function addColumnIfMissing($table, $column, $definition) {
+        $stmt = self::$conn->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
+        $stmt->execute([$column]);
+        if ($stmt->rowCount() == 0) {
+            self::$conn->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+        }
     }
 
     private static function seedData() {
@@ -204,10 +247,12 @@ class Database {
         $stmt_a->execute([$student1_id, '2026-10-05', 'absent', 1, 'Visite médicale']);
         $stmt_a->execute([$student1_id, '2026-11-02', 'absent', 0, 'Pas de motif fourni']);
 
+        self::$conn->exec("INSERT INTO student_fees (student_id, total_due) VALUES ($student1_id, 9000.00), ($student2_id, 9000.00)");
+
         // Insert Payments
-        $stmt_pay = self::$conn->prepare("INSERT INTO payments (student_id, type_paiement, montant, date_paiement, recu_no) VALUES (?, ?, ?, ?, ?)");
-        $stmt_pay->execute([$student1_id, 'Inscription', 1500.00, '2026-09-01', 'REC-2026-001']);
-        $stmt_pay->execute([$student1_id, 'Mensualite', 500.00, '2026-10-01', 'REC-2026-002']);
-        $stmt_pay->execute([$student2_id, 'Inscription', 1500.00, '2026-09-01', 'REC-2026-003']);
+        $stmt_pay = self::$conn->prepare("INSERT INTO payments (student_id, type_paiement, montant, date_paiement, recu_no, mode_paiement, reference_paiement) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt_pay->execute([$student1_id, 'Inscription', 1500.00, '2026-09-01', 'REC-2026-001', 'Espèces', '']);
+        $stmt_pay->execute([$student1_id, 'Mensualite', 500.00, '2026-10-01', 'REC-2026-002', 'Virement', 'VIR-2026-002']);
+        $stmt_pay->execute([$student2_id, 'Inscription', 1500.00, '2026-09-01', 'REC-2026-003', 'Carte bancaire', 'CB-2026-003']);
     }
 }

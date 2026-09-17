@@ -257,9 +257,21 @@ class AdminController extends Controller {
                     $type = $_POST['type_paiement'];
                     $montant = floatval($_POST['montant']);
                     $date = $_POST['date_paiement'];
+                    $mode = $this->sanitize($_POST['mode_paiement'] ?? 'Espèces');
+                    $reference = $this->sanitize($_POST['reference_paiement'] ?? '');
+                    $notes = $this->sanitize($_POST['notes'] ?? '');
 
-                    $this->paymentModel->create($student_id, $type, $montant, $date);
+                    $this->paymentModel->create($student_id, $type, $montant, $date, $mode, $reference, $notes);
                     $_SESSION['success'] = "Paiement enregistré avec succès.";
+                } elseif ($action === 'update_student_fee') {
+                    $student_id = intval($_POST['student_id']);
+                    $total_due = floatval($_POST['total_due']);
+                    $notes = $this->sanitize($_POST['fee_notes'] ?? '');
+                    if ($total_due < 0) {
+                        throw new Exception("Le montant total à payer ne peut pas être négatif.");
+                    }
+                    $this->paymentModel->updateStudentFee($student_id, $total_due, $notes);
+                    $_SESSION['success'] = "Situation financière de l'élève mise à jour.";
                 } elseif ($action === 'delete_payment') {
                     $id = intval($_POST['id']);
                     $this->paymentModel->delete($id);
@@ -282,7 +294,11 @@ class AdminController extends Controller {
         $this->render('admin/payments', [
             'payments' => $this->paymentModel->getAll(),
             'students' => $this->studentModel->getAll(),
-            'receipt' => $receipt
+            'receipt' => $receipt,
+            'financialSummary' => $this->paymentModel->getFinancialSummary(),
+            'levelFinances' => $this->paymentModel->getFinancialByLevel(),
+            'classFinances' => $this->paymentModel->getFinancialByClass(),
+            'studentSituations' => $this->paymentModel->getStudentFinancialSituations()
         ]);
     }
 }
